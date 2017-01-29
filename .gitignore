@@ -1,0 +1,8 @@
+debug
+release
+*.hlslh
+.qmake.conf
+.qmake.stash
+Makefile
+Makefile.*
+*.user
