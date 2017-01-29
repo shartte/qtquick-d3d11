@@ -1080,12 +1080,18 @@ void QSGD3D11EnginePrivate::updateBuffer(Buffer *buf)
     }
 
     auto data = reinterpret_cast<quint8*>(mapped.pData);
+    memcpy(data, buf->cpuDataRef.p, buf->cpuDataRef.size);
 
-    for (auto &dirty : buf->cpuDataRef.dirty) {
+    // D3D12 can use partial updates here since it can guarantee that
+    // the buffer is not being used by the GPU while it's writing to it,
+    // but since D3D11 has no such guarantees (and no way to guarantee it),
+    // we need to replace the entirety of the buffer and let the graphics driver
+    // handle it...
+    /*for (auto &dirty : buf->cpuDataRef.dirty) {
         auto offset = dirty.first;
         auto size = dirty.second;
         memcpy(data + offset, buf->cpuDataRef.p + offset, size);
-    }
+    }*/
 
     context->Unmap(bfd.buffer.Get(), 0);
 
@@ -1499,6 +1505,7 @@ void QSGD3D11EnginePrivate::finalizePipeline(const QSGD3D11PipelineState &pipeli
         rastDesc.DepthBiasClamp = D3D11_DEFAULT_DEPTH_BIAS_CLAMP;
         rastDesc.SlopeScaledDepthBias = D3D11_DEFAULT_SLOPE_SCALED_DEPTH_BIAS;
         rastDesc.DepthClipEnable = TRUE;
+        rastDesc.ScissorEnable = TRUE;
 
         if (FAILED(device->CreateRasterizerState(&rastDesc, &cachedPso->rasterizerState))) {
             qWarning("Unable to create rasterizer state");
@@ -1554,7 +1561,6 @@ void QSGD3D11EnginePrivate::finalizePipeline(const QSGD3D11PipelineState &pipeli
         }
 
         cachedPso->sampleMask = UINT_MAX;
-        cachedPso->primitiveTopology = D3D11_PRIMITIVE_TOPOLOGY(pipelineState.topologyType);
         /*psoDesc.NumRenderTargets = 1;
         psoDesc.RTVFormats[0] = RT_COLOR_FORMAT;
         psoDesc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
@@ -1573,7 +1579,7 @@ void QSGD3D11EnginePrivate::finalizePipeline(const QSGD3D11PipelineState &pipeli
     drawContext->VSSetShader(cachedPso->vs.Get(), nullptr, 0);
     drawContext->PSSetShader(cachedPso->ps.Get(), nullptr, 0);
     drawContext->IASetInputLayout(cachedPso->inputLayout.Get());
-    drawContext->IASetPrimitiveTopology(cachedPso->primitiveTopology);
+    // drawContext->IASetPrimitiveTopology(cachedPso->primitiveTopology);
 
     const float blendFactors[4] = {
         tframeData.blendFactor.x(),

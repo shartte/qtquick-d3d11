@@ -212,12 +212,6 @@ struct QSGD3D11PipelineState
         StencilDescr
     };
 
-    enum TopologyType {
-        TopologyTypePoint = 1,
-        TopologyTypeLine,
-        TopologyTypeTriangle
-    };
-
     enum BlendType {
         BlendNone,
         BlendPremul, // == GL_ONE, GL_ONE_MINUS_SRC_ALPHA
@@ -241,7 +235,6 @@ struct QSGD3D11PipelineState
     StencilOp stencilFailOp = StencilKeep;
     StencilOp stencilDepthFailOp = StencilKeep;
     StencilOp stencilPassOp = StencilKeep;
-    TopologyType topologyType = TopologyTypeTriangle;
 
     bool operator==(const QSGD3D11PipelineState &other) const {
         bool eq = shaders == other.shaders
@@ -257,8 +250,7 @@ struct QSGD3D11PipelineState
                 && (!stencilEnable || stencilFunc == other.stencilFunc)
                 && (!stencilEnable || stencilFailOp == other.stencilFailOp)
                 && (!stencilEnable || stencilDepthFailOp == other.stencilDepthFailOp)
-                && (!stencilEnable || stencilPassOp == other.stencilPassOp)
-                && topologyType == other.topologyType;
+                && (!stencilEnable || stencilPassOp == other.stencilPassOp);
         if (eq) {
             for (int i = 0; i < inputElementCount; ++i) {
                 if (!(inputElements[i] == other.inputElements[i])) {
@@ -277,8 +269,7 @@ inline uint qHash(const QSGD3D11PipelineState &key, uint seed = 0)
             + key.cullMode + key.frontCCW
             + key.colorWrite + key.blend
             + key.depthEnable + key.depthWrite
-            + key.stencilEnable
-            + key.topologyType;
+            + key.stencilEnable;
 }
 
 class QSGD3D11Engine
